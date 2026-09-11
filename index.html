@@ -536,165 +536,140 @@ function importJSON(inp){const f=inp.files[0];if(!f)return;const r=new FileReade
   r.readAsText(f)}
 document.addEventListener('gesturestart',e=>e.preventDefault());
 render();
-  /* ================= LINK / QR SHARE ================= */
-const QR=(()=>{
-const EC=[0,7,10,15,20,26,18,20,24,30,18,20,24,26,30,22,24,28,30,28,28,28,28,30,30,26,28,30,30,30,30,30,30,30,30,30,30,30,30,30,30];
-const NB=[0,1,1,1,1,1,2,2,2,2,4,4,4,4,4,6,6,6,6,7,8,8,9,9,10,12,12,12,13,14,15,16,17,18,19,19,20,21,22,24,25];
-const raw=v=>{let r=(16*v+128)*v+64;if(v>=2){const n=(v/7|0)+2;r-=(25*n-10)*n-55;if(v>=7)r-=36}return r};
-const dcw=v=>(raw(v)/8|0)-EC[v]*NB[v];
-const E=new Uint8Array(512),L=new Uint8Array(256);
-(()=>{let x=1;for(let i=0;i<255;i++){E[i]=x;L[x]=i;x<<=1;if(x&256)x^=0x11d}for(let i=255;i<512;i++)E[i]=E[i-255]})();
-const ml=(a,b)=>a&&b?E[L[a]+L[b]]:0;
-function gpoly(n){let p=[1];for(let i=0;i<n;i++){const r=new Array(p.length+1).fill(0);
- for(let j=0;j<p.length;j++){r[j]^=ml(p[j],1);r[j+1]^=ml(p[j],E[i])}p=r}return p}
-function rs(d,n){const g=gpoly(n),r=new Array(n).fill(0);
- for(const b of d){const f=b^r[0];r.shift();r.push(0);for(let i=0;i<n;i++)r[i]^=ml(g[i+1],f)}return r}
-function apos(v){if(v===1)return[];const n=(v/7|0)+2,st=v===32?26:Math.ceil((v*4+4)/(n*2-2))*2,o=[6];
- for(let p=v*4+10;o.length<n;p-=st)o.splice(1,0,p);return o}
-const gb=(x,i)=>((x>>>i)&1)!==0;
-function make(txt){
- const by=new TextEncoder().encode(txt);let v=0;
- for(let i=1;i<=40;i++){if(Math.ceil((4+(i<10?8:16)+by.length*8)/8)<=dcw(i)){v=i;break}}
- if(!v)return null;
- const sz=v*4+17,bits=[],pu=(x,n)=>{for(let i=n-1;i>=0;i--)bits.push((x>>>i)&1)};
- pu(4,4);pu(by.length,v<10?8:16);for(const b of by)pu(b,8);
- const cap=dcw(v)*8;pu(0,Math.min(4,cap-bits.length));while(bits.length%8)bits.push(0);
- const dat=[];for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];dat.push(b)}
- for(let p=0xEC;dat.length<dcw(v);p^=0xEC^0x11)dat.push(p);
- const nb=NB[v],ec=EC[v],tot=raw(v)/8|0,sl=(tot/nb|0)-ec,ns=nb-tot%nb;
- const bl=[],es=[];let o=0;
- for(let i=0;i<nb;i++){const n=sl+(i<ns?0:1),d=dat.slice(o,o+n);o+=n;bl.push(d);es.push(rs(d,ec))}
- const fin=[];
- for(let i=0;i<sl+1;i++)for(let j=0;j<nb;j++)if(i<bl[j].length)fin.push(bl[j][i]);
- for(let i=0;i<ec;i++)for(let j=0;j<nb;j++)fin.push(es[j][i]);
- const m=[],fn=[];for(let y=0;y<sz;y++){m.push(new Array(sz).fill(false));fn.push(new Array(sz).fill(false))}
- const sf=(x,y,b)=>{if(x>=0&&y>=0&&x<sz&&y<sz){m[y][x]=b;fn[y][x]=true}};
- const fd=(cx,cy)=>{for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){const d=Math.max(Math.abs(dx),Math.abs(dy));sf(cx+dx,cy+dy,d!==2&&d!==4)}};
- fd(3,3);fd(sz-4,3);fd(3,sz-4);
- for(let i=0;i<sz;i++){sf(6,i,i%2===0);sf(i,6,i%2===0)}
- const ap=apos(v);
- for(let i=0;i<ap.length;i++)for(let j=0;j<ap.length;j++){
-  if((i===0&&j===0)||(i===0&&j===ap.length-1)||(i===ap.length-1&&j===0))continue;
-  for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)sf(ap[j]+dx,ap[i]+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1)}
- const fmt=k=>{const d=1<<3|k;let r=d;for(let i=0;i<10;i++)r=(r<<1)^((r>>>9)*0x537);
-  const b=((d<<10)|r)^0x5412;
-  for(let i=0;i<=5;i++)sf(8,i,gb(b,i));
-  sf(8,7,gb(b,6));sf(8,8,gb(b,7));sf(7,8,gb(b,8));
-  for(let i=9;i<15;i++)sf(14-i,8,gb(b,i));
-  for(let i=0;i<8;i++)sf(sz-1-i,8,gb(b,i));
-  for(let i=8;i<15;i++)sf(8,sz-15+i,gb(b,i));
-  sf(8,sz-8,true)};
- fmt(0);
- if(v>=7){let r=v;for(let i=0;i<12;i++)r=(r<<1)^((r>>>11)*0x1F25);const b=v<<12|r;
-  for(let i=0;i<18;i++){const bit=gb(b,i),a=sz-11+i%3,c=(i/3|0);sf(a,c,bit);sf(c,a,bit)}}
- let i=0;
- for(let right=sz-1;right>=1;right-=2){if(right===6)right=5;
-  for(let vt=0;vt<sz;vt++)for(let j=0;j<2;j++){
-   const x=right-j,up=((right+1)&2)===0,y=up?sz-1-vt:vt;
-   if(!fn[y][x]&&i<fin.length*8){m[y][x]=((fin[i>>>3]>>>(7-(i&7)))&1)!==0;i++}}}
- const MF=[(x,y)=>(x+y)%2===0,(x,y)=>y%2===0,(x,y)=>x%3===0,(x,y)=>(x+y)%3===0,
-  (x,y)=>(((y/2)|0)+((x/3)|0))%2===0,(x,y)=>x*y%2+x*y%3===0,
-  (x,y)=>(x*y%2+x*y%3)%2===0,(x,y)=>((x+y)%2+x*y%3)%2===0];
- const pen=()=>{let p=0;
-  for(let k=0;k<2;k++)for(let a=0;a<sz;a++){let run=1,pv=k?m[0][a]:m[a][0];
-   for(let b=1;b<sz;b++){const c=k?m[b][a]:m[a][b];if(c===pv)run++;else{if(run>=5)p+=3+run-5;run=1;pv=c}}
-   if(run>=5)p+=3+run-5}
-  for(let y=0;y<sz-1;y++)for(let x=0;x<sz-1;x++){const c=m[y][x];
-   if(c===m[y][x+1]&&c===m[y+1][x]&&c===m[y+1][x+1])p+=3}
-  let dk=0;for(let y=0;y<sz;y++)for(let x=0;x<sz;x++)if(m[y][x])dk++;
-  p+=Math.floor(Math.abs(dk*20-sz*sz*10)/(sz*sz))*10;return p};
- let best=0,bs=Infinity;
- for(let k=0;k<8;k++){
-  for(let y=0;y<sz;y++)for(let x=0;x<sz;x++)if(!fn[y][x]&&MF[k](x,y))m[y][x]=!m[y][x];
-  fmt(k);const s=pen();if(s<bs){bs=s;best=k}
-  for(let y=0;y<sz;y++)for(let x=0;x<sz;x++)if(!fn[y][x]&&MF[k](x,y))m[y][x]=!m[y][x]}
- for(let y=0;y<sz;y++)for(let x=0;x<sz;x++)if(!fn[y][x]&&MF[best](x,y))m[y][x]=!m[y][x];
- fmt(best);
- return m;
-}
-function canvas(txt,scale){
- const m=make(txt);if(!m)return null;
- const n=m.length,q=4,sc=scale||8,px=(n+q*2)*sc;
- const cv=document.createElement('canvas');cv.width=cv.height=px*2;
- const c=cv.getContext('2d');c.scale(2,2);
- c.fillStyle='#fff';c.fillRect(0,0,px,px);c.fillStyle='#000';
- for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(m[y][x])c.fillRect((x+q)*sc,(y+q)*sc,sc,sc);
- return cv;
-}
-return{make,canvas};})();
+/* ================= LINK / QR SHARE v2 ================= */
+const ICO_TBL=['svg:bottle','svg:can','svg:gbottle','svg:snack','svg:snackcan','svg:chilled','svg:dessert',
+ '🧴','🧃','🥛','🍫','🍬','🍟','🥨','🍞','🥤','☕','🍵','💧','🧊','🍜','🥪','🍦','💊','📦'];
+const FS='\x03',RS='\x01',SS='\x02',MF='\x04',MR='\x05';
 
-const B64={
- enc(u8){let s='';for(const b of u8)s+=String.fromCharCode(b);
-  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')},
-};
+/* ไทย 3 ไบต์ -> 1 ไบต์ (ตัวช่วยหลักที่ทำให้ลิงก์สั้นลง ~3 เท่า) */
+function tEnc(str){
+ const o=[];
+ for(const ch of String(str??'')){
+  const c=ch.codePointAt(0);
+  if(c<0x7F)o.push(c);
+  else if(c>=0x0E00&&c<=0x0E7F)o.push(0x80|(c-0x0E00));
+  else for(let i=0;i<ch.length;i++){const u=ch.charCodeAt(i);o.push(0x7F,u>>8,u&255)}
+ }
+ return new Uint8Array(o);
+}
+const b64u=u8=>{let s='';for(const b of u8)s+=String.fromCharCode(b);
+ return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
+
 async function packCode(all){
- const pi=new Map(),ti=new Map();
- const ms=(all?S.machines:[M()]);
+ const ms=all?S.machines:[M()];
  const used=new Set();ms.forEach(m=>{for(const k in m.slots)used.add(m.slots[k].pid)});
- const prods=[];S.products.forEach(p=>{if(used.has(p.id)){pi.set(p.id,prods.length);
-  prods.push([p.name,p.icon,p.cap,p.price||0,(p.cats||[]).join('|')])}});
- const tags=[];S.tags.forEach(t=>{ti.set(t.id,tags.length);tags.push([t.name,t.color])});
- const data={v:1,p:prods,t:tags,m:ms.map(m=>{const sl={};
-  for(const k in m.slots){const s=m.slots[k];
-   sl[k]=[pi.has(s.pid)?pi.get(s.pid):-1,+s.qty||0,+s.cap||0,MECH.indexOf(s.mech),s.lvl||'',
-    Math.max(1,+s.span||1),(s.tags||[]).map(x=>ti.get(x)).filter(x=>x!=null),s.note||''];}
-  return [m.name,m.rows,m.cols,sl]})};
- const bytes=new TextEncoder().encode(JSON.stringify(data));
+ const pi=new Map(),ti=new Map(),P2=[],T2=[];
+ S.products.forEach(p=>{if(!used.has(p.id))return;pi.set(p.id,P2.length);
+  const ii=ICO_TBL.indexOf(p.icon);
+  P2.push([p.name,ii>=0?ii:'!'+(p.icon||''),p.cap,p.price||0].join(FS))});
+ S.tags.forEach(t=>{ti.set(t.id,T2.length);
+  const ci=PAL.indexOf(t.color);
+  T2.push([t.name,ci>=0?ci:'!'+t.color].join(FS))});
+ const M2=ms.map(m=>{
+  const sl=[];
+  for(const k in m.slots){const s=m.slots[k];if(!pi.has(s.pid))continue;
+   const mi=MECH.indexOf(s.mech),sp=Math.max(1,+s.span||1);
+   const f=[k,pi.get(s.pid),+s.cap||0,(+s.qty===+s.cap)?'':(+s.qty||0),
+    mi<0?0:mi,sp>1?sp:'',(s.tags||[]).map(x=>ti.get(x)).filter(x=>x!=null).join(','),
+    s.lvl||'',s.note||''];
+   while(f.length&&(f[f.length-1]===''||f[f.length-1]==null))f.pop();
+   sl.push(f.join(FS))}
+  return [m.name,m.rows,m.cols,sl.join(RS)].join(MF)});
+ const bytes=tEnc(['2',P2.join(RS),T2.join(RS),M2.join(MR)].join(SS));
  if(window.CompressionStream){try{
   const cs=new CompressionStream('deflate');const w=cs.writable.getWriter();
   w.write(bytes);w.close();
-  const buf=new Uint8Array(await new Response(cs.readable).arrayBuffer());
-  return 'z'+B64.enc(buf)}catch(e){}}
- return 'r'+B64.enc(bytes);
+  return 'Z'+b64u(new Uint8Array(await new Response(cs.readable).arrayBuffer()))
+ }catch(e){}}
+ return 'R'+b64u(bytes);
 }
+
+/* โหลดไลบรารี QR ที่ผ่านการทดสอบจริง (ใช้ครั้งแรกครั้งเดียว) */
+let QRLIB=null;
+function loadQR(){
+ if(QRLIB)return Promise.resolve(QRLIB);
+ return new Promise((res,rej)=>{
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+  s.onload=()=>{QRLIB=window.qrcode;res(QRLIB)};
+  s.onerror=()=>rej(new Error('no-net'));
+  document.head.appendChild(s);
+ });
+}
+async function shortenURL(u){
+ const r=await fetch('https://is.gd/create.php?format=simple&url='+encodeURIComponent(u));
+ const t=(await r.text()).trim();
+ if(!/^https?:\/\//.test(t))throw new Error(t);
+ return t;
+}
+
 async function openLink(){
  const base=localStorage.getItem('vm_viewer_url')||'';
  const md=modal(`<h3>🔗 แชร์เป็นลิงก์ / QR</h3>
   <div class="f"><label>ขอบเขตข้อมูล</label><select id="lk_sc">
-    <option value="0">เฉพาะตู้นี้ (${esc(M().name)})</option>
-    <option value="1">ทุกตู้ (${S.machines.length} ตู้)</option></select></div>
-  <div class="f"><label>ที่อยู่เว็บของแอป Viewer (ถ้ามี)</label>
-    <input id="lk_u" value="${esc(base)}" placeholder="https://ชื่อคุณ.github.io/viewer.html"></div>
+   <option value="0">เฉพาะตู้นี้ (${esc(M().name)})</option>
+   <option value="1">ทุกตู้ (${S.machines.length} ตู้)</option></select></div>
+  <div class="f"><label>ที่อยู่เว็บของ Viewer</label>
+   <input id="lk_u" value="${esc(base)}" placeholder="https://ชื่อคุณ.github.io/viewer.html"></div>
   <div id="lk_out" style="font-size:13px;color:var(--dim)">กำลังสร้าง…</div>
   <div class="acts">
-    <button class="btn-p" id="lk_cl" style="flex:1">📋 คัดลอกลิงก์</button>
-    <button id="lk_cc">🔤 คัดลอกโค้ด</button>
-    <button id="lk_q">📱 QR</button>
-    <button onclick="closeAll()">ปิด</button></div>`);
- let code='';
+   <button class="btn-p" id="lk_cl" style="flex:1">📋 คัดลอกลิงก์</button>
+   <button id="lk_sh">✂️ ย่อลิงก์</button>
+   <button id="lk_cc">🔤 โค้ด</button>
+   <button id="lk_q">📱 QR</button>
+   <button onclick="closeAll()">ปิด</button></div>`);
+ let code='',link='',short='';
+ const out=md.querySelector('#lk_out');
+ const full=()=>{const u=(md.querySelector('#lk_u').value||'').trim();
+  return u?u.split('#')[0]+'#'+code:''};
+ const show=()=>{
+  const cur=short||link;
+  const n=cur?cur.length:code.length;
+  out.innerHTML=`<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px;word-break:break-all;max-height:96px;overflow:auto;font-size:11px;color:var(--txt)">${esc(cur||code)}</div>
+   <div style="margin-top:7px">ความยาว <b style="color:var(--txt)">${n}</b> ตัวอักษร · ${
+    n<=300?'<span style="color:var(--ok)">✅ QR สแกนง่ายมาก</span>'
+    :n<=900?'✅ QR ใช้ได้'
+    :n<=1800?'<span style="color:var(--warn)">⚠️ QR จะถี่ แนะนำกด “ย่อลิงก์”</span>'
+    :'<span style="color:var(--bad)">❌ ยาวเกินสำหรับ QR — กด “ย่อลิงก์” ก่อน</span>'}</div>
+   ${link?'':'<div style="margin-top:6px;color:var(--warn)">ยังไม่ได้ใส่ที่อยู่ Viewer — ใช้ปุ่ม 🔤 โค้ด ส่งทาง LINE ได้เลย</div>'}`;
+ };
  const build=async()=>{
-  md.querySelector('#lk_out').innerHTML='กำลังสร้าง…';
+  out.textContent='กำลังสร้าง…';short='';
   code=await packCode(md.querySelector('#lk_sc').value==='1');
-  const u=(md.querySelector('#lk_u').value||'').trim();
-  localStorage.setItem('vm_viewer_url',u);
-  const link=u?u.split('#')[0]+'#'+code:'';
-  const kb=(code.length/1024).toFixed(1);
-  md.querySelector('#lk_out').innerHTML=
-   `<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px;word-break:break-all;max-height:110px;overflow:auto;font-size:11px;color:var(--txt)">${esc(link||code)}</div>
-    <div style="margin-top:7px">ขนาดข้อมูล <b style="color:var(--txt)">${kb} KB</b> · ${code.length>2900?'<span style="color:var(--warn)">⚠️ ใหญ่เกินสำหรับ QR — ใช้ลิงก์/โค้ดแทน</span>':'✅ ทำ QR ได้'}</div>
-    ${u?'':'<div style="margin-top:6px;color:var(--warn)">ยังไม่ได้ใส่ที่อยู่ Viewer — ใช้ปุ่ม “คัดลอกโค้ด” ส่งให้อีกฝ่ายวางในแอปได้เลย</div>'}`;
+  localStorage.setItem('vm_viewer_url',(md.querySelector('#lk_u').value||'').trim());
+  link=full();show();
  };
  md.querySelector('#lk_sc').onchange=build;
  md.querySelector('#lk_u').onchange=build;
- md.querySelector('#lk_cl').onclick=()=>{const u=(md.querySelector('#lk_u').value||'').trim();
-  if(!u)return toast('ใส่ที่อยู่ Viewer ก่อน หรือใช้ปุ่มคัดลอกโค้ด');
-  navigator.clipboard.writeText(u.split('#')[0]+'#'+code).then(()=>toast('คัดลอกลิงก์แล้ว'))};
+ md.querySelector('#lk_cl').onclick=()=>{const t=short||link;
+  if(!t)return toast('ใส่ที่อยู่ Viewer ก่อน หรือใช้ปุ่มโค้ด');
+  navigator.clipboard.writeText(t).then(()=>toast('คัดลอกลิงก์แล้ว'))};
  md.querySelector('#lk_cc').onclick=()=>navigator.clipboard.writeText(code).then(()=>toast('คัดลอกโค้ดแล้ว'));
- md.querySelector('#lk_q').onclick=()=>{
-  const u=(md.querySelector('#lk_u').value||'').trim();
-  const payload=u?u.split('#')[0]+'#'+code:code;
-  if(payload.length>2900)return toast('⚠️ ข้อมูลใหญ่เกิน QR · ลองเลือกเฉพาะตู้นี้');
-  const cv=QR.canvas(payload,7);
-  if(!cv)return toast('⚠️ สร้าง QR ไม่สำเร็จ');
+ md.querySelector('#lk_sh').onclick=async()=>{
+  if(!link)return toast('ใส่ที่อยู่ Viewer ก่อน');
+  toast('กำลังย่อลิงก์…');
+  try{short=await shortenURL(link);show();toast('ย่อลิงก์สำเร็จ')}
+  catch(e){toast('⚠️ ย่อไม่สำเร็จ (ต้องต่อเน็ต)')}};
+ md.querySelector('#lk_q').onclick=async()=>{
+  const payload=short||link||code;
+  if(payload.length>1800)return toast('⚠️ ยาวเกิน — กด “ย่อลิงก์” ก่อน');
+  let qr;
+  try{const lib=await loadQR();qr=lib(0,payload.length>900?'L':'M');
+   qr.addData(payload);qr.make()}
+  catch(e){return toast('⚠️ สร้าง QR ไม่ได้ (ต้องต่อเน็ตครั้งแรก)')}
+  const url=qr.createDataURL(8,4);
   const q=modal(`<h3>📱 สแกนเพื่อเปิดผัง</h3>
-    <div style="background:#fff;border-radius:14px;padding:10px;text-align:center"><img id="qi" style="width:100%;max-width:340px"></div>
-    <div style="font-size:12px;color:var(--dim);margin-top:8px;text-align:center">ให้อีกฝ่ายเปิดกล้อง iPhone/iPad สแกนได้เลย</div>
-    <div class="acts"><button class="btn-p" style="flex:1" id="qs">📤 แชร์ QR</button><button onclick="this.closest('.mask').remove()">ปิด</button></div>`);
-  q.querySelector('#qi').src=cv.toDataURL('image/png');
-  cv.toBlob(b=>{const f=new File([b],'vending-qr.png',{type:'image/png'});
-   q.querySelector('#qs').onclick=async()=>{
-    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]})}catch(e){}}
-    else{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;a.click()}}},'image/png');
+   <div style="background:#fff;border-radius:14px;padding:12px;text-align:center">
+     <img id="qi" src="${url}" style="width:100%;max-width:330px;image-rendering:pixelated"></div>
+   <div style="font-size:12px;color:var(--dim);margin-top:8px;text-align:center">
+     ${short?'ลิงก์แบบย่อ · สแกนง่าย':'เปิดกล้อง iPhone/iPad สแกนได้เลย'}</div>
+   <div class="acts"><button class="btn-p" style="flex:1" id="qs">📤 แชร์ QR</button>
+   <button onclick="this.closest('.mask').remove()">ปิด</button></div>`);
+  q.querySelector('#qs').onclick=async()=>{
+   const blob=await (await fetch(url)).blob();
+   const f=new File([blob],'vending-qr.png',{type:blob.type});
+   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]})}catch(e){}}
+   else{const a=document.createElement('a');a.href=url;a.download='vending-qr.png';a.click()}};
  };
  build();
 }
