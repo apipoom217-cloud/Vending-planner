@@ -90,9 +90,9 @@ input:focus,select:focus{border-color:var(--acc)}
   <button class="sm" onclick="openSum()">📊</button>
   <button class="sm" onclick="exportJSON()">⬇️</button>
   <button class="sm" onclick="imp.click()">⬆️</button>
-  <button class="sm btn-p" onclick="openShare(false)">📤 แชร์รูป</button>
   <button class="sm btn-p" onclick="openShare(true)">📚 รวมทุกตู้</button>
   <button class="sm btn-p" onclick="openLink()">🔗 ลิงก์/QR</button>
+  <button class="sm btn-p" onclick="openCloud()">☁️ GitHub</button>
   <button class="sm btn-p" onclick="openProd()">+ สินค้า</button>
 </header>
 
@@ -672,6 +672,63 @@ async function openLink(){
    else{const a=document.createElement('a');a.href=url;a.download='vending-qr.png';a.click()}};
  };
  build();
+}
+/* ================= CLOUD SYNC (GitHub Pages) ================= */
+function dlDataJSON(){
+ const b=new Blob([JSON.stringify(S)],{type:'application/json'});
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(b);a.download='data.json';a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+async function openCloud(){
+ const base=localStorage.getItem('vm_viewer_url')||'';
+ const md=modal(`<h3>☁️ ซิงก์ผ่าน GitHub (ลิงก์ถาวร)</h3>
+  <div style="font-size:13px;color:var(--dim);line-height:1.75;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px;margin-bottom:12px">
+   <b style="color:var(--txt)">ทำครั้งแรกครั้งเดียว</b><br>
+   1. กด <b>⬇️ ดาวน์โหลด data.json</b> ด้านล่าง<br>
+   2. ไปที่ repo ของคุณใน GitHub → <b>Add file → Upload files</b><br>
+   3. อัป <code>data.json</code> ไว้<b>โฟลเดอร์เดียวกับ viewer.html</b> → Commit<br>
+   4. ส่งลิงก์ด้านล่างให้อีกฝ่าย <b>ครั้งเดียวพอ</b><br><br>
+   <b style="color:var(--ok)">ครั้งต่อไป</b> แค่ดาวน์โหลดแล้วอัปทับไฟล์เดิม อีกฝ่ายเห็นข้อมูลใหม่ทันที
+  </div>
+  <div class="f"><label>ที่อยู่ Viewer ของคุณ</label>
+   <input id="cl_u" value="${esc(base)}" placeholder="https://ชื่อคุณ.github.io/viewer.html"></div>
+  <div class="f"><label>ลิงก์ถาวรสำหรับส่งต่อ</label>
+   <div id="cl_link" style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;word-break:break-all;font-size:12px;min-height:40px"></div></div>
+  <div class="acts">
+   <button class="btn-p" style="flex:1" onclick="dlDataJSON();toast('ได้ไฟล์ data.json แล้ว → อัปขึ้น GitHub')">⬇️ ดาวน์โหลด data.json</button>
+   <button id="cl_cp">📋 คัดลอกลิงก์</button>
+   <button id="cl_qr">📱 QR</button>
+   <button onclick="closeAll()">ปิด</button></div>`);
+ const inp=md.querySelector('#cl_u'),box=md.querySelector('#cl_link');
+ const mk=()=>{const u=(inp.value||'').trim();
+  localStorage.setItem('vm_viewer_url',u);
+  const l=u?u.split('#')[0]+'#g':'';
+  box.innerHTML=l?esc(l)+`<div style="color:var(--ok);margin-top:6px;font-size:11px">✅ สั้น ${l.length} ตัวอักษร · QR สแกนง่ายมาก</div>`
+   :'<span style="color:var(--warn)">ใส่ที่อยู่ Viewer ด้านบนก่อน</span>';
+  return l};
+ inp.oninput=mk;
+ md.querySelector('#cl_cp').onclick=()=>{const l=mk();
+  if(!l)return toast('ใส่ที่อยู่ Viewer ก่อน');
+  navigator.clipboard.writeText(l).then(()=>toast('คัดลอกลิงก์แล้ว'))};
+ md.querySelector('#cl_qr').onclick=async()=>{
+  const l=mk();if(!l)return toast('ใส่ที่อยู่ Viewer ก่อน');
+  let qr;try{const lib=await loadQR();qr=lib(0,'M');qr.addData(l);qr.make()}
+  catch(e){return toast('⚠️ สร้าง QR ไม่ได้ (ต้องต่อเน็ตครั้งแรก)')}
+  const url=qr.createDataURL(10,4);
+  const q=modal(`<h3>📱 QR ลิงก์ถาวร</h3>
+   <div style="background:#fff;border-radius:14px;padding:14px;text-align:center">
+    <img src="${url}" style="width:100%;max-width:320px;image-rendering:pixelated"></div>
+   <div style="font-size:12px;color:var(--dim);margin-top:8px;text-align:center">พิมพ์แปะไว้ข้างตู้ได้เลย · ข้อมูลอัปเดตตามที่คุณแก้เสมอ</div>
+   <div class="acts"><button class="btn-p" style="flex:1" id="qs">📤 แชร์ QR</button>
+   <button onclick="this.closest('.mask').remove()">ปิด</button></div>`);
+  q.querySelector('#qs').onclick=async()=>{
+   const blob=await (await fetch(url)).blob();
+   const f=new File([blob],'vending-qr.png',{type:blob.type});
+   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]})}catch(e){}}
+   else{const a=document.createElement('a');a.href=url;a.download='vending-qr.png';a.click()}};
+ };
+ mk();
 }
 </script>
 </body>
